@@ -1,0 +1,43 @@
+{% extends 'hotel/base.html' %}
+
+{% block content %}
+<h1>Facturas</h1>
+<div class="mb-3">
+    <div class="btn-group" role="group">
+        <a href="?status=pending" class="btn btn-outline-secondary">Pendientes</a>
+        <a href="?status=paid" class="btn btn-outline-secondary">Pagadas</a>
+        <a href="{% url 'hotel:invoice_list' %}" class="btn btn-outline-secondary">Todas</a>
+    </div>
+</div>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>N° Factura</th>
+            <th>Cliente</th>
+            <th>Habitación</th>
+            <th>Fecha Emisión</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for invoice in invoices %}
+        <tr>
+            <td>{{ invoice.invoice_number }}</td>
+            <td>{{ invoice.reservation.customer }}</td>
+            <td>{{ invoice.reservation.room.room_number }}</td>
+            <td>{{ invoice.issue_date }}</td>
+            <td>${{ invoice.total_amount }}</td>
+            <td>{{ invoice.get_status_display }}</td>
+            <td>
+                <a href="{% url 'hotel:invoice_detail' invoice.pk %}" class="btn btn-sm btn-info">Ver</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">No hay facturas registradas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

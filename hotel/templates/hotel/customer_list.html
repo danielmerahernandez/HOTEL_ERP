@@ -1,0 +1,29 @@
+{% extends 'hotel/base.html' %}
+
+{% block content %}
+<h1>Clientes</h1>
+<a href="{% url 'hotel:customer_create' %}" class="btn btn-primary mb-3">Nuevo Cliente</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nombre completo</th>
+            <th>Documento</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for customer in customers %}
+        <tr>
+            <td>{{ customer.first_name }} {{ customer.last_name }}</td>
+            <td>{{ customer.document_id }}</td>
+            <td>{{ customer.phone }}</td>
+            <td>{{ customer.email }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No hay clientes registrados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

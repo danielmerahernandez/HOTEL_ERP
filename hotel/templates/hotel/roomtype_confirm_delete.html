@@ -1,0 +1,20 @@
+{% extends 'hotel/base.html' %}
+{% block content %}
+<div class="container">
+    <div class="card shadow-sm border-danger">
+        <div class="card-header bg-white">
+            <h3 class="mb-0 text-danger"><i class="fas fa-trash-alt"></i> Eliminar tipo de Habitación</h3>
+        </div>
+        <div class="card-body">
+            <p>¿Estás seguro de eliminar la habitación <strong>{{ room.room_number }}</strong> ({{ room.room_type.name }})?</p>
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'hotel:room_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

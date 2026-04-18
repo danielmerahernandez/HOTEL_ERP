@@ -1,0 +1,46 @@
+{% extends 'hotel/base.html' %}
+
+{% block content %}
+<h1>Detalle de Reserva</h1>
+<div class="card">
+    <div class="card-body">
+        <p><strong>Cliente:</strong> {{ reservation.customer }}</p>
+        <p><strong>Habitación:</strong> {{ reservation.room.room_number }} ({{ reservation.room.room_type.name }})</p>
+        <p><strong>Ingreso:</strong> {{ reservation.check_in }}</p>
+        <p><strong>Salida:</strong> {{ reservation.check_out }}</p>
+        <p><strong>Total:</strong> ${{ reservation.total_price }}</p>
+        <p><strong>Estado:</strong> {{ reservation.get_status_display }}</p>
+        <p><strong>Creada:</strong> {{ reservation.created_at }}</p>
+    </div>
+    <div class="card-footer">
+        {% if not reservation.invoice %}
+            <a href="{% url 'hotel:invoice_generate' reservation.pk %}" class="btn btn-info">Generar Factura</a>
+        {% else %}
+            <a href="{% url 'hotel:invoice_detail' reservation.invoice.pk %}" class="btn btn-info">Ver Factura</a>
+        {% endif %}
+        
+        {% if reservation.status == 'confirmed' %}
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="check_in">
+                <button type="submit" class="btn btn-primary">Realizar Check-in</button>
+            </form>
+        {% endif %}
+        {% if reservation.status == 'checked_in' %}
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="check_out">
+                <button type="submit" class="btn btn-success">Realizar Check-out</button>
+            </form>
+        {% endif %}
+        {% if reservation.status == 'confirmed' or reservation.status == 'checked_in' %}
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="cancel">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('¿Cancelar esta reserva?')">Cancelar Reserva</button>
+            </form>
+        {% endif %}
+        <a href="{% url 'hotel:reservation_list' %}" class="btn btn-secondary">Volver</a>
+    </div>
+</div>
+{% endblock %}

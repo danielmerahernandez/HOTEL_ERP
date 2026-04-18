@@ -1,0 +1,190 @@
+{% extends 'hotel/base.html' %}
+{% load static %}
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-chart-line"></i> Panel de Control</h2>
+
+<!-- Tarjetas rápidas -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary h-100">
+            <div class="card-body">
+                <i class="fas fa-door-open fa-2x float-end"></i>
+                <h5 class="card-title">Total Habitaciones</h5>
+                <p class="display-6">{{ total_rooms }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body">
+                <i class="fas fa-check-circle fa-2x float-end"></i>
+                <h5>Disponibles</h5>
+                <p class="display-6">{{ available_rooms }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body">
+                <i class="fas fa-user-friends fa-2x float-end"></i>
+                <h5>Ocupadas</h5>
+                <p class="display-6">{{ occupied_rooms }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info h-100">
+            <div class="card-body">
+                <i class="fas fa-calendar-day fa-2x float-end"></i>
+                <h5>Reservas Hoy</h5>
+                <p class="display-6">{{ today_reservations }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <i class="fas fa-chart-bar"></i> Reservas por día de la semana (últimos 90 días)
+            </div>
+            <div class="card-body">
+                <canvas id="weekdayChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <i class="fas fa-chart-line"></i> Reservas mensuales (últimos 12 meses)
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <i class="fas fa-dollar-sign"></i> Ingresos por mes (facturas pagadas)
+            </div>
+            <div class="card-body">
+                <canvas id="incomeChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <i class="fas fa-percent"></i> Ocupación promedio (últimos 30 días)
+            </div>
+            <div class="card-body text-center">
+                <h1 class="display-4">{{ occupancy_rate }}%</h1>
+                <div class="progress mt-3" style="height: 25px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ occupancy_rate }}%;" aria-valuenow="{{ occupancy_rate }}" aria-valuemin="0" aria-valuemax="100">{{ occupancy_rate }}%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reservas recientes (igual que antes) -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-white">
+        <i class="fas fa-clock"></i> Reservas Recientes
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Habitación</th>
+                        <th>Ingreso</th>
+                        <th>Salida</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for res in recent_reservations %}
+                    <tr>
+                        <td>{{ res.customer }}</td>
+                        <td>{{ res.room.room_number }}</td>
+                        <td>{{ res.check_in }}</td>
+                        <td>{{ res.check_out }}</td>
+                        <td><span class="badge bg-secondary">{{ res.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center">No hay reservas recientes</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <a href="{% url 'hotel:reservation_list' %}" class="btn btn-sm btn-primary">Ver todas las reservas</a>
+    </div>
+</div>
+
+<script>
+    // Gráfico de días de la semana
+    const ctxWeek = document.getElementById('weekdayChart').getContext('2d');
+    new Chart(ctxWeek, {
+        type: 'bar',
+        data: {
+            labels: {{ weekday_labels|safe }},
+            datasets: [{
+                label: 'Reservas',
+                data: {{ weekday_counts|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true, integer: true } } }
+    });
+
+    // Gráfico de reservas mensuales
+    const monthlyLabels = [{% for m in months_data %}'{{ m.month }}',{% endfor %}];
+    const monthlyCounts = [{% for m in months_data %}{{ m.count }},{% endfor %}];
+    const ctxMonth = document.getElementById('monthlyChart').getContext('2d');
+    new Chart(ctxMonth, {
+        type: 'line',
+        data: {
+            labels: monthlyLabels,
+            datasets: [{
+                label: 'Reservas',
+                data: monthlyCounts,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true, integer: true } } }
+    });
+
+    // Gráfico de ingresos mensuales
+    const incomeLabels = [{% for i in income_data %}'{{ i.month }}',{% endfor %}];
+    const incomeAmounts = [{% for i in income_data %}{{ i.total }},{% endfor %}];
+    const ctxIncome = document.getElementById('incomeChart').getContext('2d');
+    new Chart(ctxIncome, {
+        type: 'bar',
+        data: {
+            labels: incomeLabels,
+            datasets: [{
+                label: 'Ingresos ($)',
+                data: incomeAmounts,
+                backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return '$' + value; } } } } }
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}

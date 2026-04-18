@@ -1,0 +1,227 @@
+{% extends 'hotel/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container d-flex justify-content-center mt-4">
+    <div class="card shadow-sm" style="max-width: 500px; width: 100%;">
+        <div class="card-body p-0">
+            <!-- Estilo tipo ticket POS -->
+            <style>
+                @media print {
+                    body * {
+                        visibility: hidden;
+                    }
+                    .pos-ticket, .pos-ticket * {
+                        visibility: visible;
+                    }
+                    .pos-ticket {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        margin: 0;
+                        padding: 0;
+                        font-family: 'Courier New', monospace;
+                    }
+                    .no-print {
+                        display: none;
+                    }
+                    .print-button {
+                        display: none;
+                    }
+                }
+                .pos-ticket {
+                    font-family: 'Courier New', monospace;
+                    font-size: 14px;
+                    background: white;
+                    padding: 20px;
+                    width: 100%;
+                    max-width: 400px;
+                    margin: 0 auto;
+                }
+                .pos-ticket .header {
+                    text-align: center;
+                    border-bottom: 1px dashed #000;
+                    margin-bottom: 10px;
+                    padding-bottom: 10px;
+                }
+                .pos-ticket .company-name {
+                    font-size: 18px;
+                    font-weight: bold;
+                }
+                .pos-ticket .invoice-details {
+                    margin: 10px 0;
+                }
+                .pos-ticket .invoice-details p {
+                    margin: 2px 0;
+                }
+                .pos-ticket table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 10px 0;
+                }
+                .pos-ticket th, .pos-ticket td {
+                    text-align: left;
+                    padding: 4px 0;
+                }
+                .pos-ticket th {
+                    border-bottom: 1px dashed #000;
+                }
+                .pos-ticket .total-row {
+                    border-top: 1px dashed #000;
+                    font-weight: bold;
+                }
+                .pos-ticket .payment-section {
+                    margin-top: 15px;
+                    border-top: 1px dashed #000;
+                    padding-top: 10px;
+                }
+                .pos-ticket .footer {
+                    text-align: center;
+                    margin-top: 20px;
+                    font-size: 12px;
+                    border-top: 1px dashed #000;
+                    padding-top: 10px;
+                }
+                .form-pago {
+                    background: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 8px;
+                    margin-top: 15px;
+                }
+            </style>
+
+            <div class="pos-ticket" id="posTicket">
+                <!-- Encabezado empresa -->
+                <div class="header">
+                    <div class="company-name">HOTELERP S.A.S</div>
+                    <div>NIT: 900.123.456-7</div>
+                    <div>Calle 54 # 32-71, Bogotá</div>
+                    <div>Tel: +57 1 4151210</div>
+                    <div>Resolución DIAN 191816549</div>
+                    <div>Autorizada: 2024-01-01</div>
+                    <div>Prefijo: ERP</div>
+                </div>
+
+                <!-- Info factura -->
+                <div class="invoice-details">
+                    <p><strong>Factura de venta:</strong> {{ invoice.invoice_number }}</p>
+                    <p><strong>Fecha:</strong> {{ invoice.issue_date|date:"Y/m/d" }}</p>
+                    <p><strong>Cliente:</strong> {{ invoice.reservation.customer.first_name }} {{ invoice.reservation.customer.last_name }}</p>
+                    <p><strong>C.C/NIT:</strong> {{ invoice.reservation.customer.document_id }}</p>
+                    <p><strong>Dirección:</strong> {{ invoice.reservation.customer.address|default:"Cliente no registra" }}</p>
+                </div>
+
+                <!-- Tabla de conceptos (estancia) -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cant</th>
+                            <th>Descripción</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>
+                                Habitación {{ invoice.reservation.room.room_number }} ({{ invoice.reservation.room.room_type.name }})<br>
+                                <small>{{ invoice.reservation.check_in }} → {{ invoice.reservation.check_out }}</small><br>
+                                <small>{{ invoice.reservation.check_out|timeuntil:invoice.reservation.check_in }} noches</small>
+                            </td>
+                            <td>${{ invoice.total_amount|floatformat:0 }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Totales -->
+                <div style="text-align: right; margin: 10px 0;">
+                    <p><strong>SUBTOTAL:</strong> ${{ invoice.total_amount|floatformat:0 }}</p>
+                    <p><strong>IVA:</strong> $0 (Exento)</p>
+                    <p class="total-row"><strong>TOTAL:</strong> ${{ invoice.total_amount|floatformat:0 }}</p>
+                </div>
+
+                <!-- Forma de pago (solo visual, no persiste) -->
+                <div class="payment-section">
+                    <p><strong>Forma de Pago</strong></p>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <select id="paymentMethod" class="form-select form-select-sm">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta Débito/Crédito">Tarjeta Débito/Crédito</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <input type="number" id="paidAmount" class="form-control form-control-sm" placeholder="Monto recibido" step="1000" value="{{ invoice.total_amount }}">
+                        </div>
+                    </div>
+                    <div class="mt-2" id="changeDisplay">
+                        <strong>Cambio:</strong> $0
+                    </div>
+                </div>
+
+                <!-- Estado de pago desde BD -->
+                <div class="mt-2 text-center">
+                    {% if invoice.status == 'paid' %}
+                        <span class="badge bg-success">PAGADA</span>
+                    {% else %}
+                        <span class="badge bg-warning">PENDIENTE</span>
+                    {% endif %}
+                </div>
+
+                <!-- Pie de factura -->
+                <div class="footer">
+                    Elaborado por: {{ user.username }}<br>
+                    www.hotelerp.com - Nit: 900.123.456<br>
+                    ¡Gracias por su visita!
+                </div>
+            </div>
+
+            <!-- Botones de acción (no se imprimen) -->
+            <div class="no-print d-flex justify-content-between p-3">
+                <a href="{% url 'hotel:invoice_list' %}" class="btn btn-secondary btn-sm">Volver</a>
+                <button onclick="window.print();" class="btn btn-primary btn-sm">🖨️ Imprimir</button>
+                {% if invoice.status == 'pending' %}
+                    <a href="{% url 'hotel:invoice_mark_paid' invoice.pk %}" class="btn btn-success btn-sm">Marcar como Pagada</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Calcular cambio en tiempo real
+    const total = {{ invoice.total_amount|floatformat:0 }};
+    const paidInput = document.getElementById('paidAmount');
+    const changeSpan = document.getElementById('changeDisplay');
+
+    function updateChange() {
+        let paid = parseFloat(paidInput.value) || 0;
+        let change = paid - total;
+        if (change < 0) change = 0;
+        changeSpan.innerHTML = `<strong>Cambio:</strong> $${change.toFixed(0)}`;
+    }
+    paidInput.addEventListener('input', updateChange);
+    updateChange();
+
+    // Al imprimir, mostrar la forma de pago seleccionada en el ticket
+    window.onbeforeprint = function() {
+        let method = document.getElementById('paymentMethod').value;
+        let paid = parseFloat(paidInput.value) || 0;
+        let paymentDiv = document.querySelector('.payment-section');
+        if (paymentDiv && !document.getElementById('printedPaymentInfo')) {
+            let info = document.createElement('div');
+            info.id = 'printedPaymentInfo';
+            info.className = 'mt-2';
+            info.innerHTML = `<strong>Pagado con:</strong> ${method}<br><strong>Monto recibido:</strong> $${paid.toFixed(0)}<br><strong>Cambio:</strong> $${(paid - total).toFixed(0)}`;
+            paymentDiv.appendChild(info);
+        }
+    };
+    window.onafterprint = function() {
+        let info = document.getElementById('printedPaymentInfo');
+        if (info) info.remove();
+    };
+</script>
+{% endblock %}

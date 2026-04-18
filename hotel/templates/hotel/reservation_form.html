@@ -1,0 +1,95 @@
+{% extends 'hotel/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white border-0 pt-4 pb-0">
+                    <h3 class="mb-0"><i class="fas fa-calendar-check me-2 text-primary"></i>{{ title }}</h3>
+                    <hr class="my-3">
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <!-- Cliente -->
+                            <div class="col-md-6">
+                                <label for="{{ form.customer.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="fas fa-user me-1 text-secondary"></i> {{ form.customer.label }}
+                                </label>
+                                {{ form.customer }}
+                                {% if form.customer.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.customer.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <!-- Habitación -->
+                            <div class="col-md-6">
+                                <label for="{{ form.room.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="fas fa-bed me-1 text-secondary"></i> {{ form.room.label }}
+                                </label>
+                                {{ form.room }}
+                                {% if form.room.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.room.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <!-- Check-in -->
+                            <div class="col-md-6">
+                                <label for="{{ form.check_in.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="fas fa-calendar-plus me-1 text-secondary"></i> {{ form.check_in.label }}
+                                </label>
+                                {{ form.check_in }}
+                                {% if form.check_in.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.check_in.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <!-- Check-out -->
+                            <div class="col-md-6">
+                                <label for="{{ form.check_out.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="fas fa-calendar-minus me-1 text-secondary"></i> {{ form.check_out.label }}
+                                </label>
+                                {{ form.check_out }}
+                                {% if form.check_out.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.check_out.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
+                            <a href="{% url 'hotel:reservation_list' %}" class="btn btn-outline-secondary px-4">
+                                <i class="fas fa-times me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-save me-1"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    input, select {
+        border-radius: 0.5rem !important;
+        border: 1px solid #ced4da !important;
+        transition: all 0.2s;
+    }
+    input:focus, select:focus {
+        border-color: #86b7fe !important;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+    }
+    input[type="date"] {
+        padding: 0.5rem;
+    }
+</style>
+
+<script>
+    document.querySelectorAll('input, select').forEach(field => {
+        field.classList.add('form-control');
+    });
+    // Los campos de fecha ya tienen clase, pero aseguramos
+    document.querySelectorAll('input[type="date"]').forEach(f => f.classList.add('form-control'));
+</script>
+{% endblock %}
